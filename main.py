@@ -63,14 +63,9 @@ def exibir_img():
     if not caminho:
         messagebox.showerror("Erro", "Nenhum arquivo PDF selecionado.")
         return
-
     with open(caminho, "rb") as arq:
         leitor = pypdf.PdfReader(arq)
         texto = ""
-        # Extrai o texto de cada página e concatena (usando string vazia se None for retornado)
-        for pg in leitor.pages:
-            texto += (pg.extract_text() or "")
-        # Converte o texto acumulado para maiúsculas
         texto = texto.upper()
 
         janela_img = tk.Toplevel()
@@ -83,21 +78,25 @@ def exibir_img():
         linha = 0
         img_linha = 16
 
+        for pg in leitor.pages:
+            texto += pg.extract_text()
+
         for letra in texto:
             if letra.isalpha():
-                # Monta o caminho para a imagem na pasta "libras"
-                nome_img = os.path.join("libras", f"{letra}.png")
+                nome_img = f"{letra}.png"
+
                 if os.path.exists(nome_img):
                     imagem = Image.open(nome_img)
                     imagem.thumbnail((100, 100))
                     imagem = ImageTk.PhotoImage(imagem)
                     label_imagem = tk.Label(frame_img, image=imagem)
-                    label_imagem.image = imagem  # Mantém referência para evitar garbage collection
+                    label_imagem.image = imagem
                     label_imagem.grid(row=linha, column=coluna, padx=5, pady=5)
                     coluna += 1
                     if coluna >= img_linha:
                         coluna = 0
                         linha += 1
+
             elif letra.isspace():
                 espaco = tk.Label(frame_img, width=5)
                 espaco.grid(row=linha, column=coluna, padx=5, pady=5)
@@ -106,29 +105,76 @@ def exibir_img():
                     coluna = 0
                     linha += 1
 
-
 #Função p/ converter áudio em texto
 def conv_audio_texto():
-    r = sr.Recognizer()
-    with sr.Microphone() as source:
+    reconhecedor = sr.Recognizer()
+
+    #Msg: Ouvindo abaixo do botão
+    label_ouvindo = tk.Label(janela, text="OUVINDO...")
+    label_ouvindo.place(relx=0.8, rely=0.6, anchor=tk.CENTER)
+    janela.update()
+
+    with sr.Microphone() as fonte:
         try:
-            print("Aguardando fala...")
-            audio = r.listen(source, timeout=5)
-            texto = r.recognize_google(audio, language="pt-BR")
-            print("Você disse:", texto)
-            return texto  # <- Essa linha é essencial para que o texto vá para a interface
-
-        except sr.UnknownValueError:
-            messagebox.showerror("Erro", "Não foi possível entender o áudio.")
-            return None
-
-        except sr.RequestError:
-            messagebox.showerror("Erro", "Erro ao se comunicar com o serviço de reconhecimento.")
-            return None
-
+            audio = reconhecedor.listen(fonte)
+        except sr.WaitTimeoutError:
+            label_ouvindo.destroy()
+            messagebox.showerror("Erro", "Tempo limite excedido. Nenhum áudio detectado.")
+            return
+        except sr.RequestError as e:
+            label_ouvindo.destroy()
+            messagebox.showerror("Erro", f"Erro ao acessar o serviço de reconhecimento de voz: {e}")
+            return
         except Exception as e:
-            messagebox.showerror("Erro inesperado", str(e))
-            return None
+            label_ouvindo.destroy()
+            messagebox.showerror("Erro", f"Ocorreu um erro inesperado ao capturar o áudio: {e}")
+            return
+
+    label_ouvindo.destroy()
+
+    try:
+        texto = reconhecedor.recognize_google(audio, language="pt-BR")
+        janela_img = tk.Toplevel()
+        janela_img.title("LETRAS (LIBRAS) - Áudio")
+
+        frame_img = tk.Frame(janela_img)
+        frame_img.pack()
+
+        coluna = 0
+        linha = 0
+        img_linha = 16
+
+        for letra in texto.upper():
+            if letra.isalpha():
+                nome_img = f"{letra}.png"
+
+                if os.path.exists(nome_img):
+                    imagem = Image.open(nome_img)
+                    imagem.thumbnail((100, 100))
+                    imagem = ImageTk.PhotoImage(imagem)
+                    label_imagem = tk.Label(frame_img, image=imagem)
+                    label_imagem.image = imagem
+                    label_imagem.grid(row=linha, column=coluna, padx=5, pady=5)
+                    coluna += 1
+                    if coluna >= img_linha:
+                        coluna = 0
+                        linha += 1
+
+            elif letra.isspace():
+                espaco = tk.Label(frame_img, width=5)
+                espaco.grid(row=linha, column=coluna, padx=5, pady=5)
+                coluna += 1
+                if coluna >= img_linha:
+                    coluna = 0
+                    linha += 1
+
+    except sr.UnknownValueError:
+        messagebox.showerror("Erro", "Não foi possível reconhecer o que foi falado")
+    except sr.RequestError as e:
+        messagebox.showerror("Erro", f"Erro no serviço de reconhecimento de voz: {e}")
+    except Exception as e:
+        messagebox.showerror("Erro", f"Ocorreu um erro inesperado: {e}")
+
 #Função p/definir a similaridade entre os videos e a imagem do usuário(a)
 def calcular_similaridade_landmarks(landmarks_captados, landmarks_referencia):
     try:
@@ -281,12 +327,12 @@ def atualizar_frame_webcam():
                         if similaridade_video3 > MIN_SIMILARIDADE and similaridade_video3 > similaridade_maxima and (tempo_atual - ultimo_tempo_deteccao["eu sou"] > TEMPO_MINIMO_ENTRE_DETECOES):
                             similaridade_maxima = similaridade_video3
                             gesto_reconhecido = "eu sou"
-                        if similaridade_video4 > MIN_SIMILARIDADE and similaridade_video4 > similaridade_maxima and (tempo_atual - ultimo_tempo_deteccao["Jessica Silva"] > TEMPO_MINIMO_ENTRE_DETECOES):
+                        if similaridade_video4 > MIN_SIMILARIDADE and similaridade_video4 > similaridade_maxima and (tempo_atual - ultimo_tempo_deteccao["jeferson gabriel"] > TEMPO_MINIMO_ENTRE_DETECOES):
                             similaridade_maxima = similaridade_video4
-                            gesto_reconhecido = "Jessica Silva"
-                        if similaridade_video5 > MIN_SIMILARIDADE and similaridade_video5 > similaridade_maxima and (tempo_atual - ultimo_tempo_deteccao["aluna da escola do futuro EFG"] > TEMPO_MINIMO_ENTRE_DETECOES):
+                            gesto_reconhecido = "jeferson gabriel"
+                        if similaridade_video5 > MIN_SIMILARIDADE and similaridade_video5 > similaridade_maxima and (tempo_atual - ultimo_tempo_deteccao["aluno da escola do futuro EFG"] > TEMPO_MINIMO_ENTRE_DETECOES):
                             similaridade_maxima = similaridade_video5
-                            gesto_reconhecido = "aluna da escola do futuro EFG"
+                            gesto_reconhecido = "aluno da escola do futuro EFG"
                         if similaridade_video6 > MIN_SIMILARIDADE and similaridade_video6 > similaridade_maxima and (tempo_atual - ultimo_tempo_deteccao["do curso de ciencia de dados"] > TEMPO_MINIMO_ENTRE_DETECOES):
                             similaridade_maxima = similaridade_video6
                             gesto_reconhecido = "do curso de ciencia de dados"
@@ -374,7 +420,7 @@ def iniciar_webcam():
         landmarks_video10 = extrair_landmarks_video(caminho_video10)
         landmarks_video11 = extrair_landmarks_video(caminho_video11)
 
-        ultimo_tempo_deteccao = {"oi": 0, "tudo bem": 0, "eu sou": 0, "Jessica Silva": 0, "aluna da escola do futuro EFG":0, "do curso de ciencia de dados":0, "esse projeto":0, "tem como objetivo":0, "a inclusao de todos":0, "que falam e necessitam de libras":0, "de libras":0} #Pode modificar essas letras/palavras
+        ultimo_tempo_deteccao = {"oi": 0, "tudo bem": 0, "eu sou": 0, "jeferson gabriel": 0, "aluno da escola do futuro EFG":0, "do curso de ciencia de dados":0, "esse projeto":0, "tem como objetivo":0, "a inclusao de todos":0, "que falam e necessitam de libras":0, "de libras":0} #Pode modificar essas letras/palavras
 
         video_capture = cv2.VideoCapture(0)
         if not video_capture.isOpened():
