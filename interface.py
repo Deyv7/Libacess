@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import messagebox
 from PIL import Image, ImageTk
 import os
 
@@ -23,7 +23,7 @@ def abrir_janela_libras(texto):
     # Cria uma nova janela para exibir o texto em Libras
     janela_libras = tk.Toplevel()
     janela_libras.title("Texto em Libras")
-    janela_libras.geometry("600x400")
+    janela_libras.geometry("1200x200")
     janela_libras.configure(bg="white")
 
     # Frame para exibir imagens das letras em Libras
@@ -45,7 +45,7 @@ def abrir_janela_libras(texto):
             if os.path.exists(caminho_imagem):
                 try:
                     img = Image.open(caminho_imagem)
-                    img = img.resize((50, 50), Image.Resampling.LANCZOS)
+                    img = img.resize((100, 100), Image.Resampling.LANCZOS)
                     img_tk = ImageTk.PhotoImage(img)
 
                     # Mantém referência da imagem na lista
@@ -189,14 +189,14 @@ def iniciar_interface():
 # Janela de boas-vindas
 splash = tk.Tk()
 splash.title("Boas-vindas")
-splash.geometry("500x300")
+splash.geometry("500x350")
 splash.configure(bg="white")
 
 screen_width = splash.winfo_screenwidth()
 screen_height = splash.winfo_screenheight()
 x = int((screen_width / 2) - (500 / 2))
 y = int((screen_height / 2) - (300 / 2))
-splash.geometry(f"500x300+{x}+{y}")
+splash.geometry(f"500x350+{x}+{y}")
 # Adiciona imagem à janela de boas-vindas
 try:
     fundo_img = Image.open(FUNDO_BOAS_VINDAS_PATH)
